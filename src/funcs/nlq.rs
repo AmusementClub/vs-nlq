@@ -132,7 +132,9 @@ impl<'core> Filter<'core> for MapNLQ<'core> {
             FrameRefMut::new_uninitialized(core, Some(&bl_frame), new_format, resolution)
         };
 
-        if !new_frame.props().keys().contains(&"DolbyVisionRPU") {
+        if !new_frame.props().keys().contains(&"DolbyVisionRPU")
+            && el_frame.props().keys().contains(&"DolbyVisionRPU")
+        {
             new_frame.props_mut().set_data(
                 "DolbyVisionRPU",
                 el_frame.props().get_data("DolbyVisionRPU")?,
