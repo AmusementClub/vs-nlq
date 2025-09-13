@@ -1,0 +1,51 @@
+name: Build (Windows)
+
+on:
+  release:
+    types: [created]
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2025
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Get VapourSynth.lib
+      shell: bash
+      run: |
+        set -ex
+        curl -s -o vapoursynth.zip -L https://github.com/AmusementClub/vapoursynth-classic/releases/download/R57.A11/release-x64.zip
+        7z x -ovapoursynth vapoursynth.zip
+        mv vapoursynth/sdk/lib64/VapourSynth.lib .
+
+    - name: Build
+      run: cargo build --release
+
+    - name: Package Release
+      shell: bash
+      if: github.event_name == 'release'
+      run: |
+        cd target/release
+        7z a -t7z -mx=7 ../../vs-nlq-${{ github.event.release.tag_name }}-windows-x86_64.7z *.dll
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: vs-nlq-windows-x86_64
+        path: target/release/*.dll
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: github.event_name == 'release'
+      with:
+        files: "vs-nlq-${{ github.event.release.tag_name }}-windows-x86_64.7z"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
